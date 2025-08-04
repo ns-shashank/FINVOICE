@@ -1,0 +1,9 @@
+Flask
+SpeechRecognition
+pyttsx3
+pyaudio
+tk
+matplotlib
+openai
+pandas
+fpdf

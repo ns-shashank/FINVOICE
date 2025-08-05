@@ -1,40 +1,48 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Flask, render_template, request, jsonify
+from datetime import datetime
+import re
 
 app = Flask(__name__)
-CORS(app)  # allow frontend to talk to backend without CORS issues
-
-# In-memory storage (consider using a database later)
 expenses = []
+
+def parse_expense(text):
+    # Extract amount and item from voice
+    amount_match = re.search(r"(\d+)", text)
+    if not amount_match:
+        return None
+
+    amount = int(amount_match.group(1))
+    item = text.replace(str(amount), "").replace("rupees", "").strip()
+
+    now = datetime.now()
+    return {
+        "date": now.strftime("%Y-%m-%d"),
+        "time": now.strftime("%H:%M:%S"),
+        "amount": amount,
+        "item": item
+    }
 
 @app.route("/")
 def index():
-    return jsonify({"message": "Welcome to FinVoice backend"}), 200
+    return render_template("index.html")
 
-@app.route("/add_expense", methods=["POST"])
-def add_expense():
-    data = request.get_json()
+@app.route("/process", methods=["POST"])
+def process():
+    data = request.json
+    transcript = data.get("transcript", "").lower()
 
-    if not data or "amount" not in data or "category" not in data:
-        return jsonify({"error": "Invalid data"}), 400
+    if "show expenses" in transcript:
+        return jsonify({"expenses": expenses})
 
-    try:
-        amount = float(data["amount"])
-        category = data["category"]
-    except (ValueError, TypeError):
-        return jsonify({"error": "Amount must be a number"}), 400
+    if "done" in transcript:
+        return jsonify({"message": "done"})
 
-    expenses.append({"amount": amount, "category": category})
-    return jsonify({"message": "Expense added successfully"}), 200
-
-@app.route("/expenses", methods=["GET"])
-def get_expenses():
-    return jsonify(expenses), 200
-
-@app.route("/clear_expenses", methods=["POST"])
-def clear_expenses():
-    expenses.clear()
-    return jsonify({"message": "All expenses cleared"}), 200
+    expense = parse_expense(transcript)
+    if expense:
+        expenses.append(expense)
+        return jsonify({"message": "Expense recorded"})
+    else:
+        return jsonify({"message": "Could not parse expense"})
 
 if __name__ == "__main__":
     app.run(debug=True)

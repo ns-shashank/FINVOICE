@@ -18,8 +18,8 @@ A voice-powered personal finance tracker built using Python (frontend + backend)
 2. Start backend:
    PYTHONPATH=. python backend/app.py
 
-3. Run frontend GUI:
-   PYTHONPATH=. python frontend/app_gui.py
+3. Start frontend:
+   npm start
 
 4. Generate report (optional):
    PYTHONPATH=. python reports/report_generator.py

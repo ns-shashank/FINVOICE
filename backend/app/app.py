@@ -8,7 +8,6 @@ CORS(app)
 expenses = []
 
 def parse_expense(text):
-    # Extract amount and item from voice
     amount_match = re.search(r"(\d+)", text)
     if not amount_match:
         return None
@@ -24,9 +23,6 @@ def parse_expense(text):
         "item": item
     }
 
-@app.route("/")
-def index():
-    return render_template("index.html")
 
 @app.route("/process", methods=["POST"])
 def process():

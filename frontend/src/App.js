@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import "./App.css";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 function App() {
   const [expenses, setExpenses] = useState([]);
   const [isListening, setIsListening] = useState(false);
@@ -9,6 +11,13 @@ function App() {
   const totalRef = useRef(0);
 
   const { transcript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) {
+      alert("Your browser doesn't support Speech Recognition.");
+      return;
+    }
+  }, [browserSupportsSpeechRecognition]);
 
   useEffect(() => {
     if (!transcript) return;
@@ -22,7 +31,6 @@ function App() {
       return;
     }
 
-    // match patterns like "rice 100"
     const match = cleaned.match(/([a-zA-Z]+)\s+(\d+)/);
 
     if (match) {
@@ -40,14 +48,29 @@ function App() {
 
         totalRef.current += amount;
         setExpenses((prev) => [...prev, expense]);
-        setPartialTranscript(""); // reset shown text
+        setPartialTranscript("");
         resetTranscript();
+
+        // 🔗 Send to backend
+        fetch(`${BACKEND_URL}/process`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ transcript: `${item} ${amount}` }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            console.log("Saved to backend:", data);
+          })
+          .catch((err) => {
+            console.error("Backend error:", err);
+          });
       }
     } else {
-      // Store what user is saying so far
       setPartialTranscript(cleaned);
     }
-  }, [transcript]);
+  }, [transcript, resetTranscript]);
 
   const handleStart = () => {
     resetTranscript();
